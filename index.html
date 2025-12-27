@@ -53,6 +53,14 @@
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         }
 
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
         .tag-category {
             background: rgba(245, 158, 11, 0.2);
             border: 1px solid rgba(245, 158, 11, 0.3);
@@ -60,7 +68,7 @@
         }
     </style>
 </head>
-<body class="min-h-screen p-4 md:p-8">
+<body class="min-h-screen p-4 md:p-8 text-slate-100">
 
     <div class="max-w-6xl mx-auto">
         <!-- Header -->
@@ -68,13 +76,24 @@
             <h1 class="text-4xl md:text-5xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-blue-600">
                 A-WEI-AI 點歌系統
             </h1>
-            <p class="text-slate-400 mb-4">記憶與管理您的專屬台語、韓語及各類歌曲/伴唱清單。</p>
-            <div class="flex gap-4">
+            <p class="text-slate-400 mb-6 font-medium">記錄您的台語與韓語練習清單。資料將儲存於您的瀏覽器中。</p>
+            
+            <!-- Actions Bar -->
+            <div class="flex flex-wrap justify-center gap-3">
                 <button onclick="manualSave()" class="btn-save px-6 py-2 rounded-full font-bold text-white shadow-lg flex items-center gap-2 transition-all">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                    儲存目前清單
+                    立即儲存
                 </button>
-                <button id="installBtn" class="hidden bg-white/10 hover:bg-white/20 px-6 py-2 rounded-full font-bold text-white border border-white/20 transition-all flex items-center gap-2">
+                <button onclick="exportData()" class="btn-secondary px-6 py-2 rounded-full font-bold text-white flex items-center gap-2 transition-all">
+                    <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    匯出備份 (JSON)
+                </button>
+                <label class="btn-secondary px-6 py-2 rounded-full font-bold text-white flex items-center gap-2 cursor-pointer transition-all">
+                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    匯入資料
+                    <input type="file" id="importFile" class="hidden" accept=".json" onchange="importData(event)">
+                </label>
+                <button id="installBtn" class="hidden bg-white/10 hover:bg-white/20 px-6 py-2 rounded-full font-bold text-white border border-white/20 flex items-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                     安裝 App
                 </button>
@@ -89,14 +108,14 @@
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                         新增資料
                     </h2>
-                    <div class="space-y-4">
+                    <div class="space-y-4 text-sm">
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm text-slate-400 mb-1">編號</label>
+                                <label class="block text-slate-400 mb-1 font-medium">編號</label>
                                 <input type="text" id="songId" placeholder="001" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white">
                             </div>
                             <div>
-                                <label class="block text-sm text-slate-400 mb-1">類別</label>
+                                <label class="block text-slate-400 mb-1 font-medium">類別</label>
                                 <select id="songCategory" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-300">
                                     <option value="歌曲">歌曲</option>
                                     <option value="伴唱">伴唱</option>
@@ -104,16 +123,16 @@
                             </div>
                         </div>
                         <div>
-                            <label class="block text-sm text-slate-400 mb-1">歌名</label>
+                            <label class="block text-slate-400 mb-1 font-medium">歌名</label>
                             <input type="text" id="songTitle" placeholder="輸入歌曲名稱" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white">
                         </div>
                         <div>
-                            <label class="block text-sm text-slate-400 mb-1">作詞者</label>
+                            <label class="block text-slate-400 mb-1 font-medium">作詞者 / 備註</label>
                             <input type="text" id="songLyricist" placeholder="例如：茄子蛋" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white">
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm text-slate-400 mb-1">性別</label>
+                                <label class="block text-slate-400 mb-1 font-medium">性別</label>
                                 <select id="songGender" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-300">
                                     <option value="男生">男生</option>
                                     <option value="女生">女生</option>
@@ -121,7 +140,7 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm text-slate-400 mb-1">語言</label>
+                                <label class="block text-slate-400 mb-1 font-medium">語言</label>
                                 <select id="songLang" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-300">
                                     <option value="台語">台語</option>
                                     <option value="國語">國語</option>
@@ -132,10 +151,10 @@
                             </div>
                         </div>
                         <div>
-                            <label class="block text-sm text-slate-400 mb-1">YouTube 連結</label>
+                            <label class="block text-slate-400 mb-1 font-medium text-red-400">YouTube 連結</label>
                             <input type="url" id="songUrl" placeholder="https://youtube.com/..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white">
                         </div>
-                        <button onclick="addSong()" class="w-full btn-gradient py-3 rounded-lg font-bold text-white shadow-lg shadow-blue-900/20">
+                        <button onclick="addSong()" class="w-full btn-gradient py-3 rounded-lg font-bold text-white shadow-lg shadow-blue-900/20 mt-2">
                             加入清單
                         </button>
                     </div>
@@ -166,37 +185,37 @@
                         <option value="日語">日語</option>
                     </select>
                     <div class="ml-auto text-slate-400 text-sm px-2">
-                        顯示：<span id="totalCount" class="text-sky-400 font-bold">0</span> 首
+                        總計：<span id="totalCount" class="text-sky-400 font-bold">0</span> 首
                     </div>
                 </div>
 
                 <!-- Table Container -->
-                <div class="glass-card rounded-2xl overflow-hidden overflow-x-auto custom-scrollbar">
+                <div class="glass-card rounded-2xl overflow-hidden overflow-x-auto custom-scrollbar shadow-2xl">
                     <table class="w-full text-left border-collapse min-w-[700px]">
                         <thead>
                             <tr class="bg-slate-800/50 text-xs tracking-wider uppercase">
-                                <th class="px-6 py-4 font-semibold text-slate-400">編號</th>
-                                <th class="px-6 py-4 font-semibold text-slate-400">歌名 / 作詞者</th>
-                                <th class="px-6 py-4 font-semibold text-slate-400">分類</th>
-                                <th class="px-6 py-4 font-semibold text-slate-400 text-right">操作</th>
+                                <th class="px-6 py-4 font-bold text-slate-400">編號</th>
+                                <th class="px-6 py-4 font-bold text-slate-400">歌名 / 作詞</th>
+                                <th class="px-6 py-4 font-bold text-slate-400">屬性</th>
+                                <th class="px-6 py-4 font-bold text-slate-400 text-right">操作</th>
                             </tr>
                         </thead>
                         <tbody id="songList" class="divide-y divide-slate-700/50">
-                            <!-- JS dynamic content -->
+                            <!-- 資料動態生成 -->
                         </tbody>
                     </table>
                 </div>
                 
                 <div id="emptyState" class="hidden text-center py-24 text-slate-500">
                     <svg class="w-12 h-12 mx-auto mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    目前沒有符合篩選條件的歌曲。
+                    目前清單是空的，或沒有符合篩選條件的歌曲。
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Toast Notification -->
-    <div id="toast" class="fixed bottom-8 right-8 bg-sky-600 text-white px-6 py-3 rounded-xl shadow-2xl transform translate-y-24 transition-transform duration-300 z-50">
+    <div id="toast" class="fixed bottom-8 right-8 bg-sky-600 text-white px-6 py-3 rounded-xl shadow-2xl transform translate-y-24 transition-transform duration-300 z-50 font-bold">
         已成功更新！
     </div>
 
@@ -205,16 +224,16 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 const swContent = `
-                    self.addEventListener('install', (event) => { self.skipWaiting(); });
-                    self.addEventListener('fetch', (event) => { event.respondWith(fetch(event.request)); });
+                    self.addEventListener('install', (e) => { self.skipWaiting(); });
+                    self.addEventListener('fetch', (e) => { e.respondWith(fetch(e.request)); });
                 `;
                 const blob = new Blob([swContent], { type: 'text/javascript' });
                 const swUrl = URL.createObjectURL(blob);
-                navigator.serviceWorker.register(swUrl).catch(err => console.log('SW registration failed:', err));
+                navigator.serviceWorker.register(swUrl).catch(err => console.log('SW failed:', err));
             });
         }
 
-        // PWA 安裝按鈕邏輯
+        // PWA 安裝按鈕
         let deferredPrompt;
         const installBtn = document.getElementById('installBtn');
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -227,14 +246,12 @@
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    installBtn.classList.add('hidden');
-                }
+                if (outcome === 'accepted') installBtn.classList.add('hidden');
                 deferredPrompt = null;
             }
         });
 
-        // 資料邏輯
+        // 核心資料邏輯
         let songs = JSON.parse(localStorage.getItem('a-wei-songs')) || [
             { id: '001', title: '浪子回頭', lyricist: '黃奇斌', gender: '男生', lang: '台語', category: '歌曲', url: 'https://www.youtube.com/watch?v=x3bDhtuC5yk' }
         ];
@@ -245,16 +262,45 @@
 
         function manualSave() {
             autoSave();
-            showToast('✅ 所有更動已成功儲存！');
+            showToast('✅ 資料已成功儲存至此裝置！');
+        }
+
+        function exportData() {
+            const dataStr = JSON.stringify(songs, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            const exportFileDefaultName = 'a-wei-music-backup.json';
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            showToast('📂 已將備份檔案下載至電腦。');
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedSongs = JSON.parse(e.target.result);
+                    if (Array.isArray(importedSongs)) {
+                        songs = importedSongs;
+                        autoSave();
+                        renderSongs();
+                        showToast('📥 資料匯入成功！');
+                    }
+                } catch (err) {
+                    alert('匯入格式錯誤，請確保檔案是正確的 JSON 格式。');
+                }
+            };
+            reader.readAsText(file);
         }
 
         function showToast(message) {
             const toast = document.getElementById('toast');
             toast.innerText = message;
             toast.classList.remove('translate-y-24');
-            setTimeout(() => {
-                toast.classList.add('translate-y-24');
-            }, 3000);
+            setTimeout(() => toast.classList.add('translate-y-24'), 3000);
         }
 
         function addSong() {
@@ -281,7 +327,7 @@
             document.getElementById('songLyricist').value = '';
             document.getElementById('songUrl').value = '';
             
-            showToast('已加入清單！');
+            showToast('🆕 歌曲已新增。');
         }
 
         function deleteSong(indexInFiltered) {
@@ -304,7 +350,7 @@
                     songs.splice(originalIndex, 1);
                     autoSave();
                     renderSongs();
-                    showToast('已刪除歌曲。');
+                    showToast('🗑️ 歌曲已刪除。');
                 }
             }
         }
@@ -337,10 +383,10 @@
                 const tr = document.createElement('tr');
                 tr.className = 'hover:bg-slate-700/30 transition-colors group';
                 tr.innerHTML = `
-                    <td class="px-6 py-4 font-mono text-sky-400 text-sm font-bold">${song.id}</td>
+                    <td class="px-6 py-4 font-mono text-sky-400 font-bold">${song.id}</td>
                     <td class="px-6 py-4">
-                        <div class="font-medium text-slate-100">${song.title}</div>
-                        <div class="text-[11px] text-slate-500 mt-0.5 font-medium">作詞：${song.lyricist}</div>
+                        <div class="font-bold text-slate-100">${song.title}</div>
+                        <div class="text-[11px] text-slate-500 mt-1">作詞/備註：${song.lyricist}</div>
                     </td>
                     <td class="px-6 py-4">
                         <div class="flex flex-wrap gap-2">
@@ -351,7 +397,7 @@
                     </td>
                     <td class="px-6 py-4 text-right">
                         <div class="flex items-center justify-end gap-4">
-                            <a href="${song.url}" target="_blank" class="text-sky-400 hover:text-sky-300 flex items-center gap-1 font-bold text-sm transition-colors">
+                            <a href="${song.url}" target="_blank" class="text-sky-400 hover:text-sky-300 flex items-center gap-1 font-bold text-sm transition-all transform hover:scale-105">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
                                 播放
                             </a>
