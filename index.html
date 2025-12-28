@@ -56,7 +56,7 @@
                 A-WEI-AI 點歌系統
             </h1>
             <p class="text-slate-400 max-w-2xl mx-auto text-sm md:text-base mb-6">
-                專業台語與韓語練唱管理系統。支援我的最愛連續播放與雲端備份功能。
+                專業音樂管理系統。支援我的最愛連續播放與資料匯入防錯功能。
             </p>
             
             <div class="flex flex-wrap justify-center gap-3">
@@ -243,8 +243,7 @@
     <script>
         // --- 資料管理 ---
         let songs = JSON.parse(localStorage.getItem('a-wei-v3')) || [
-            { id: '001', title: '浪子回頭', lyricist: '黃奇斌', gender: '男生', lang: '台語', category: '歌曲', url: 'https://www.youtube.com/watch?v=x3bDhtuC5yk', favorite: true },
-            { id: '002', title: '七桃人', lyricist: '郭金發', gender: '男生', lang: '台語', category: '歌曲', url: 'https://www.youtube.com/watch?v=oYxK8X76S5E', favorite: false }
+            { id: '001', title: '浪子回頭', lyricist: '黃奇斌', gender: '男生', lang: '台語', category: '歌曲', url: 'https://www.youtube.com/watch?v=x3bDhtuC5yk', favorite: true }
         ];
 
         let player;
@@ -266,29 +265,18 @@
             });
         }
 
-        function onPlayerReady() {
-            isPlayerReady = true;
-        }
+        function onPlayerReady() { isPlayerReady = true; }
 
-        // 優化後的 YouTube ID 提取器
         function extractId(url) {
             const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
             const match = url.match(regExp);
-            if (match && match[1]) {
-                return match[1];
-            }
-            // 如果正則沒抓到，嘗試直接清理字串
-            return url.trim();
+            return (match && match[1]) ? match[1] : url.trim();
         }
 
         function startPlaylist() {
             playlist = songs.filter(s => s.favorite);
-            if(playlist.length === 0) return alert('收藏清單是空的！請點擊歌名旁的「愛心」收藏歌曲。');
-            
-            if(isShuffle) {
-                playlist = [...playlist].sort(() => Math.random() - 0.5);
-            }
-            
+            if(playlist.length === 0) return alert('收藏清單是空的！請先點擊歌名旁的「愛心」收藏歌曲。');
+            if(isShuffle) playlist = [...playlist].sort(() => Math.random() - 0.5);
             curIdx = 0;
             document.getElementById('player-ui').classList.remove('translate-y-full');
             loadSong();
@@ -302,14 +290,9 @@
         }
 
         function loadSong() {
-            if (!isPlayerReady || !player) {
-                setTimeout(loadSong, 500);
-                return;
-            }
-            
+            if (!isPlayerReady || !player) { setTimeout(loadSong, 500); return; }
             const s = playlist[curIdx];
             const vid = extractId(s.url);
-            
             if (vid) {
                 player.loadVideoById(vid);
                 document.getElementById('p-title').innerText = s.title;
@@ -322,38 +305,17 @@
             }
         }
 
-        function playNext() { 
-            if (playlist.length === 0) return;
-            curIdx = (curIdx + 1) % playlist.length; 
-            loadSong(); 
-        }
-        
-        function playPrev() { 
-            if (playlist.length === 0) return;
-            curIdx = (curIdx - 1 + playlist.length) % playlist.length; 
-            loadSong(); 
-        }
-        
-        function closePlayer() { 
-            if (player) player.stopVideo(); 
-            document.getElementById('player-ui').classList.add('translate-y-full'); 
-        }
+        function playNext() { if (playlist.length === 0) return; curIdx = (curIdx + 1) % playlist.length; loadSong(); }
+        function playPrev() { if (playlist.length === 0) return; curIdx = (curIdx - 1 + playlist.length) % playlist.length; loadSong(); }
+        function closePlayer() { if (player) player.stopVideo(); document.getElementById('player-ui').classList.add('translate-y-full'); }
         
         function toggleShuffle() {
             isShuffle = !isShuffle;
             document.getElementById('shuffleBtn').classList.toggle('text-sky-400', isShuffle);
             showToast(isShuffle ? '🔀 隨機播放：開啟' : '🔁 隨機播放：關閉');
-            // 如果正在播放收藏清單，更新剩下的播放序
-            if (playlist.length > 1) {
-                const currentSong = playlist[curIdx];
-                playlist = songs.filter(s => s.favorite);
-                if (isShuffle) playlist = playlist.sort(() => Math.random() - 0.5);
-                curIdx = playlist.findIndex(s => s.id === currentSong.id);
-                if (curIdx === -1) curIdx = 0;
-            }
         }
 
-        // --- 表單功能 ---
+        // --- 表單與匯入功能 ---
         function saveSong() {
             const id = document.getElementById('songId').value.trim();
             const title = document.getElementById('songTitle').value.trim();
@@ -366,28 +328,55 @@
 
             if(!id || !title || !url) return alert('請填寫編號、歌名與網址');
 
-            const data = { 
-                id, 
-                title, 
-                lyricist, 
-                gender, 
-                lang, 
-                category, 
-                url, 
-                favorite: editIdx >= 0 ? (songs[editIdx].favorite || false) : false 
+            const data = { id, title, lyricist, gender, lang, category, url, favorite: editIdx >= 0 ? (songs[editIdx].favorite || false) : false };
+
+            if(editIdx >= 0) songs[editIdx] = data;
+            else songs.unshift(data);
+
+            autoSave(); resetForm(); renderSongs();
+            showToast('✅ 存檔完成');
+        }
+
+        function importData(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const data = JSON.parse(evt.target.result);
+                    if(Array.isArray(data)) {
+                        // 防錯與格式校正：確保所有欄位都存在
+                        const sanitized = data.map(s => ({
+                            id: s.id || 'N/A',
+                            title: s.title || '無歌名',
+                            lyricist: s.lyricist || '未填寫',
+                            gender: s.gender || '男生',
+                            lang: s.lang || '台語',
+                            category: s.category || '歌曲',
+                            url: s.url || '',
+                            favorite: !!s.favorite // 確保為 Boolean
+                        }));
+
+                        const choice = confirm('資料讀取成功！點擊「確定」將【覆蓋】目前清單，「取消」則改為【合併】到現有清單。');
+                        if (choice) {
+                            songs = sanitized;
+                        } else {
+                            // 合併並去重
+                            const combined = [...sanitized, ...songs];
+                            const seen = new Set();
+                            songs = combined.filter(s => {
+                                const key = `${s.id}-${s.title}`;
+                                return seen.has(key) ? false : seen.add(key);
+                            });
+                        }
+                        
+                        autoSave(); renderSongs(); 
+                        showToast('📥 匯入成功！已修正舊版相容性。');
+                    }
+                } catch(err) { alert('匯入失敗，請確認檔案格式。'); }
+                e.target.value = ''; // 清除 input 讓下次匯入同檔案可觸發
             };
-
-            if(editIdx >= 0) {
-                songs[editIdx] = data;
-                showToast('✅ 歌曲已更新！');
-            } else {
-                songs.unshift(data);
-                showToast('✅ 歌曲已新增！');
-            }
-
-            autoSave();
-            resetForm();
-            renderSongs();
+            reader.readAsText(file);
         }
 
         function editSong(originalIndex) {
@@ -400,7 +389,6 @@
             document.getElementById('songCategory').value = s.category;
             document.getElementById('songUrl').value = s.url;
             document.getElementById('editIndex').value = originalIndex;
-            
             document.getElementById('formTitle').innerText = '編輯歌曲';
             document.getElementById('saveBtn').innerText = '更新資料';
             document.getElementById('cancelEdit').classList.remove('hidden');
@@ -415,18 +403,18 @@
             ['songId', 'songTitle', 'songLyricist', 'songUrl'].forEach(id => document.getElementById(id).value = '');
         }
 
-        function deleteSong(idx) {
-            const confirmBox = confirm('確定刪除這首歌嗎？');
-            if(confirmBox) {
-                songs.splice(idx, 1);
-                autoSave(); renderSongs();
-                showToast('🗑️ 歌曲已刪除。');
-            }
-        }
-
-        function toggleFav(idx) {
-            songs[idx].favorite = !songs[idx].favorite;
-            autoSave(); renderSongs();
+        function deleteSong(idx) { if(confirm('確定刪除？')) { songs.splice(idx, 1); autoSave(); renderSongs(); } }
+        function toggleFav(idx) { songs[idx].favorite = !songs[idx].favorite; autoSave(); renderSongs(); }
+        function autoSave() { localStorage.setItem('a-wei-v3', JSON.stringify(songs)); }
+        function manualSave() { autoSave(); showToast('💾 已手動儲存'); }
+        function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.classList.remove('translate-y-32'); setTimeout(() => t.classList.add('translate-y-32'), 3000); }
+        function exportData() {
+            const blob = new Blob([JSON.stringify(songs, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'a-wei-backup-' + new Date().toISOString().split('T')[0] + '.json';
+            a.click();
         }
 
         // --- UI 渲染 ---
@@ -436,7 +424,6 @@
             const fCat = document.getElementById('filterCategory').value;
             const fLang = document.getElementById('filterLang').value;
             const fFav = document.getElementById('filterFav').checked;
-            
             list.innerHTML = '';
 
             const filtered = songs.map((s, i) => ({...s, oriIdx: i})).filter(s => {
@@ -465,79 +452,19 @@
                         <div class="flex flex-wrap gap-2">
                             <span class="px-2 py-0.5 text-[10px] font-bold rounded-full ${s.category === '伴唱' ? 'tag-karaoke' : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'}">${s.category}</span>
                             <span class="px-2 py-0.5 text-[10px] font-bold rounded-full ${s.lang === '台語' ? 'tag-lang-tw' : (s.lang === '韓語' ? 'tag-lang-kr' : 'bg-slate-800 text-slate-400 border border-slate-700')}">${s.lang}</span>
-                            <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-800 text-slate-500 border border-slate-700">${s.gender}</span>
                         </div>
                     </td>
                     <td class="px-6 py-4 text-right">
                         <div class="flex items-center justify-end gap-2">
-                            <button onclick="playSingle(${s.oriIdx})" class="p-2 bg-sky-500/10 text-sky-400 rounded-xl hover:bg-sky-500/20 transition-all shadow-sm" title="即時播放">
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                            </button>
-                            <button onclick="editSong(${s.oriIdx})" class="p-2 text-slate-400 hover:text-white transition-colors" title="編輯內容">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                            </button>
-                            <button onclick="deleteSong(${s.oriIdx})" class="p-2 text-slate-600 hover:text-rose-400 transition-colors" title="刪除歌曲">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                            </button>
+                            <button onclick="playSingle(${s.oriIdx})" class="p-2 bg-sky-500/10 text-sky-400 rounded-xl hover:bg-sky-500/20 shadow-sm"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></button>
+                            <button onclick="editSong(${s.oriIdx})" class="p-2 text-slate-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>
+                            <button onclick="deleteSong(${s.oriIdx})" class="p-2 text-slate-600 hover:text-rose-400"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
                         </div>
                     </td>
                 `;
                 list.appendChild(tr);
             });
-
             document.getElementById('emptyState').classList.toggle('hidden', filtered.length > 0);
-        }
-
-        // --- 系統工具 ---
-        function autoSave() { localStorage.setItem('a-wei-v3', JSON.stringify(songs)); }
-        
-        function manualSave() { 
-            autoSave(); 
-            showToast('💾 資料已成功儲存至此裝置！'); 
-        }
-        
-        function showToast(msg) {
-            const t = document.getElementById('toast');
-            t.innerText = msg;
-            t.classList.remove('translate-y-32');
-            setTimeout(() => t.classList.add('translate-y-32'), 3000);
-        }
-        
-        function exportData() {
-            const blob = new Blob([JSON.stringify(songs, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'a-wei-backup-' + new Date().toISOString().split('T')[0] + '.json';
-            a.click();
-            showToast('📤 已匯出備份檔案。');
-        }
-        
-        function importData(e) {
-            const file = e.target.files[0];
-            if(!file) return;
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                try {
-                    const data = JSON.parse(evt.target.result);
-                    if(Array.isArray(data)) {
-                        songs = data; 
-                        autoSave(); 
-                        renderSongs(); 
-                        showToast('📥 資料匯入成功！');
-                    }
-                } catch(err) { alert('匯入失敗，請確認檔案格式是否為 JSON。'); }
-            };
-            reader.readAsText(file);
-        }
-
-        // --- PWA 註冊 ---
-        if('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                const sw = `self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('fetch', e => e.respondWith(fetch(e.request)));`;
-                const blob = new Blob([sw], { type: 'text/javascript' });
-                navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
-            });
         }
 
         window.onload = renderSongs;
