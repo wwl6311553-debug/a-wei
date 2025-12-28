@@ -251,49 +251,106 @@
         let playlist = [];
         let curIdx = 0;
         let isShuffle = false;
+        let isPlayerReady = false;
 
         // --- 播放邏輯 ---
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('player', {
                 height: '100%',
                 width: '100%',
-                playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0, 'modestbranding': 1 },
-                events: { 'onStateChange': (e) => { if(e.data === 0) playNext(); } }
+                playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0, 'modestbranding': 1, 'playsinline': 1 },
+                events: { 
+                    'onReady': onPlayerReady,
+                    'onStateChange': (e) => { if(e.data === YT.PlayerState.ENDED) playNext(); } 
+                }
             });
         }
 
+        function onPlayerReady() {
+            isPlayerReady = true;
+        }
+
+        // 優化後的 YouTube ID 提取器
         function extractId(url) {
-            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
             const match = url.match(regExp);
-            return (match && match[2].length === 11) ? match[2] : url; // 支援直接貼 ID
+            if (match && match[1]) {
+                return match[1];
+            }
+            // 如果正則沒抓到，嘗試直接清理字串
+            return url.trim();
         }
 
         function startPlaylist() {
             playlist = songs.filter(s => s.favorite);
-            if(playlist.length === 0) return alert('收藏清單是空的！');
-            if(isShuffle) playlist = [...playlist].sort(() => Math.random() - 0.5);
+            if(playlist.length === 0) return alert('收藏清單是空的！請點擊歌名旁的「愛心」收藏歌曲。');
+            
+            if(isShuffle) {
+                playlist = [...playlist].sort(() => Math.random() - 0.5);
+            }
+            
+            curIdx = 0;
+            document.getElementById('player-ui').classList.remove('translate-y-full');
+            loadSong();
+        }
+
+        function playSingle(idx) {
+            playlist = [songs[idx]];
             curIdx = 0;
             document.getElementById('player-ui').classList.remove('translate-y-full');
             loadSong();
         }
 
         function loadSong() {
+            if (!isPlayerReady || !player) {
+                setTimeout(loadSong, 500);
+                return;
+            }
+            
             const s = playlist[curIdx];
             const vid = extractId(s.url);
-            player.loadVideoById(vid);
-            document.getElementById('p-title').innerText = s.title;
-            document.getElementById('p-sub').innerText = `No.${s.id} • 作詞：${s.lyricist}`;
-            document.getElementById('p-category').innerText = s.category;
-            document.getElementById('p-lang').innerText = s.lang;
+            
+            if (vid) {
+                player.loadVideoById(vid);
+                document.getElementById('p-title').innerText = s.title;
+                document.getElementById('p-sub').innerText = `No.${s.id} • 作詞：${s.lyricist}`;
+                document.getElementById('p-category').innerText = s.category;
+                document.getElementById('p-lang').innerText = s.lang;
+            } else {
+                showToast('❌ 無效的 YouTube 連結');
+                if (playlist.length > 1) playNext();
+            }
         }
 
-        function playNext() { curIdx = (curIdx + 1) % playlist.length; loadSong(); }
-        function playPrev() { curIdx = (curIdx - 1 + playlist.length) % playlist.length; loadSong(); }
-        function closePlayer() { player.stopVideo(); document.getElementById('player-ui').classList.add('translate-y-full'); }
+        function playNext() { 
+            if (playlist.length === 0) return;
+            curIdx = (curIdx + 1) % playlist.length; 
+            loadSong(); 
+        }
+        
+        function playPrev() { 
+            if (playlist.length === 0) return;
+            curIdx = (curIdx - 1 + playlist.length) % playlist.length; 
+            loadSong(); 
+        }
+        
+        function closePlayer() { 
+            if (player) player.stopVideo(); 
+            document.getElementById('player-ui').classList.add('translate-y-full'); 
+        }
+        
         function toggleShuffle() {
             isShuffle = !isShuffle;
             document.getElementById('shuffleBtn').classList.toggle('text-sky-400', isShuffle);
-            showToast(isShuffle ? '隨機播放：開啟' : '隨機播放：關閉');
+            showToast(isShuffle ? '🔀 隨機播放：開啟' : '🔁 隨機播放：關閉');
+            // 如果正在播放收藏清單，更新剩下的播放序
+            if (playlist.length > 1) {
+                const currentSong = playlist[curIdx];
+                playlist = songs.filter(s => s.favorite);
+                if (isShuffle) playlist = playlist.sort(() => Math.random() - 0.5);
+                curIdx = playlist.findIndex(s => s.id === currentSong.id);
+                if (curIdx === -1) curIdx = 0;
+            }
         }
 
         // --- 表單功能 ---
@@ -309,14 +366,23 @@
 
             if(!id || !title || !url) return alert('請填寫編號、歌名與網址');
 
-            const data = { id, title, lyricist, gender, lang, category, url, favorite: editIdx >= 0 ? songs[editIdx].favorite : false };
+            const data = { 
+                id, 
+                title, 
+                lyricist, 
+                gender, 
+                lang, 
+                category, 
+                url, 
+                favorite: editIdx >= 0 ? (songs[editIdx].favorite || false) : false 
+            };
 
             if(editIdx >= 0) {
                 songs[editIdx] = data;
-                showToast('已更新歌曲！');
+                showToast('✅ 歌曲已更新！');
             } else {
                 songs.unshift(data);
-                showToast('已新增歌曲！');
+                showToast('✅ 歌曲已新增！');
             }
 
             autoSave();
@@ -350,10 +416,11 @@
         }
 
         function deleteSong(idx) {
-            if(confirm('確定刪除這首歌嗎？')) {
+            const confirmBox = confirm('確定刪除這首歌嗎？');
+            if(confirmBox) {
                 songs.splice(idx, 1);
                 autoSave(); renderSongs();
-                showToast('已刪除歌曲。');
+                showToast('🗑️ 歌曲已刪除。');
             }
         }
 
@@ -385,7 +452,7 @@
                 tr.className = 'hover:bg-white/[0.03] transition-colors group text-sm';
                 tr.innerHTML = `
                     <td class="px-6 py-4 text-center">
-                        <button onclick="toggleFav(${s.oriIdx})" class="transition-all hover:scale-125">
+                        <button onclick="toggleFav(${s.oriIdx})" class="transition-all hover:scale-125 focus:outline-none">
                             <svg class="w-6 h-6 ${s.favorite ? 'favorite-active' : 'text-slate-700'}" fill="currentColor" viewBox="0 0 20 20"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/></svg>
                         </button>
                     </td>
@@ -403,13 +470,13 @@
                     </td>
                     <td class="px-6 py-4 text-right">
                         <div class="flex items-center justify-end gap-2">
-                            <a href="${s.url}" target="_blank" class="p-2 bg-sky-500/10 text-sky-400 rounded-xl hover:bg-sky-500/20 transition-all">
+                            <button onclick="playSingle(${s.oriIdx})" class="p-2 bg-sky-500/10 text-sky-400 rounded-xl hover:bg-sky-500/20 transition-all shadow-sm" title="即時播放">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                            </a>
-                            <button onclick="editSong(${s.oriIdx})" class="p-2 text-slate-400 hover:text-white transition-colors">
+                            </button>
+                            <button onclick="editSong(${s.oriIdx})" class="p-2 text-slate-400 hover:text-white transition-colors" title="編輯內容">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                             </button>
-                            <button onclick="deleteSong(${s.oriIdx})" class="p-2 text-slate-600 hover:text-rose-400 transition-colors">
+                            <button onclick="deleteSong(${s.oriIdx})" class="p-2 text-slate-600 hover:text-rose-400 transition-colors" title="刪除歌曲">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                             </button>
                         </div>
@@ -423,13 +490,19 @@
 
         // --- 系統工具 ---
         function autoSave() { localStorage.setItem('a-wei-v3', JSON.stringify(songs)); }
-        function manualSave() { autoSave(); showToast('💾 資料已成功儲存至此裝置！'); }
+        
+        function manualSave() { 
+            autoSave(); 
+            showToast('💾 資料已成功儲存至此裝置！'); 
+        }
+        
         function showToast(msg) {
             const t = document.getElementById('toast');
             t.innerText = msg;
             t.classList.remove('translate-y-32');
             setTimeout(() => t.classList.add('translate-y-32'), 3000);
         }
+        
         function exportData() {
             const blob = new Blob([JSON.stringify(songs, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -439,6 +512,7 @@
             a.click();
             showToast('📤 已匯出備份檔案。');
         }
+        
         function importData(e) {
             const file = e.target.files[0];
             if(!file) return;
@@ -447,9 +521,12 @@
                 try {
                     const data = JSON.parse(evt.target.result);
                     if(Array.isArray(data)) {
-                        songs = data; autoSave(); renderSongs(); showToast('📥 資料匯入成功！');
+                        songs = data; 
+                        autoSave(); 
+                        renderSongs(); 
+                        showToast('📥 資料匯入成功！');
                     }
-                } catch(err) { alert('匯入失敗，請確認檔案格式。'); }
+                } catch(err) { alert('匯入失敗，請確認檔案格式是否為 JSON。'); }
             };
             reader.readAsText(file);
         }
