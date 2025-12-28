@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>A-WEI-AI 點歌系統</title>
-    <!-- PWA Manifest Inline -->
+    <!-- PWA Manifest -->
     <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIkEtV0VJLUFJIOu7nuatjOezu+ey統IiwKICAic2hvcnRfbmFtZSI6ICJBLVdFSS1BSSIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMGYxNzJhIiwKICAidGhlbWVfY29sb3I6ICIjMGVhNWU5IiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9jZG4taWNvbnMtcG5nLmZsaXRpY29uLmNvbS81MTIvMzI5My8zMjkzODQ0LnBuZyIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIgogICAgfQogIF0KfQ==">
     <meta name="theme-color" content="#0ea5e9">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,135 +13,116 @@
         
         body {
             font-family: 'Noto Sans TC', sans-serif;
-            background: #0f172a;
+            background: radial-gradient(circle at top right, #1e293b, #0f172a);
             color: #f8fafc;
+            overflow-x: hidden;
         }
 
         .glass-card {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
         }
 
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #1e293b;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 10px;
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+        .btn-gradient { background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .btn-gradient:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4); }
+        
+        .favorite-active { color: #f43f5e !important; fill: #f43f5e; filter: drop-shadow(0 0 5px rgba(244, 63, 94, 0.6)); }
 
         input:focus, select:focus {
             outline: none;
-            border-color: #38bdf8;
+            border-color: #38bdf8 !important;
             box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
         }
 
-        .btn-gradient {
-            background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
-            transition: all 0.2s;
-        }
-        .btn-gradient:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-        }
+        .tag-lang-tw { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+        .tag-lang-kr { background: rgba(168, 85, 247, 0.15); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3); }
+        .tag-karaoke { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
         
-        .btn-save {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .tag-category {
-            background: rgba(245, 158, 11, 0.2);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            color: #fbbf24;
-        }
+        #player-ui { transition: transform 0.4s ease-in-out; }
     </style>
 </head>
-<body class="min-h-screen p-4 md:p-8 text-slate-100">
+<body class="min-h-screen p-4 md:p-8 pb-40">
 
-    <div class="max-w-6xl mx-auto">
+    <div class="max-w-7xl mx-auto">
         <!-- Header -->
-        <header class="mb-8 text-center flex flex-col items-center">
-            <h1 class="text-4xl md:text-5xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-blue-600">
+        <header class="mb-10 text-center">
+            <h1 class="text-4xl md:text-6xl font-black mb-3 bg-clip-text text-transparent bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-500 tracking-tight">
                 A-WEI-AI 點歌系統
             </h1>
-            <p class="text-slate-400 mb-6 font-medium">資料將儲存於您的瀏覽器中。</p>
+            <p class="text-slate-400 max-w-2xl mx-auto text-sm md:text-base mb-6">
+                專業台語與韓語練唱管理系統。支援我的最愛連續播放與雲端備份功能。
+            </p>
             
-            <!-- Actions Bar -->
             <div class="flex flex-wrap justify-center gap-3">
-                <button onclick="manualSave()" class="btn-save px-6 py-2 rounded-full font-bold text-white shadow-lg flex items-center gap-2 transition-all">
+                <button onclick="manualSave()" class="bg-emerald-600 hover:bg-emerald-500 px-6 py-2 rounded-full font-bold text-white shadow-lg flex items-center gap-2 transition-all">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                    立即儲存
+                    手動存檔
                 </button>
-                <button onclick="exportData()" class="btn-secondary px-6 py-2 rounded-full font-bold text-white flex items-center gap-2 transition-all">
-                    <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                    匯出備份 (JSON)
+                <button onclick="startPlaylist()" class="bg-rose-600 hover:bg-rose-500 px-6 py-2 rounded-full font-bold text-white shadow-xl flex items-center gap-2 transition-all group">
+                    <svg class="w-5 h-5 group-hover:animate-pulse" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                    播放收藏清單
                 </button>
-                <label class="btn-secondary px-6 py-2 rounded-full font-bold text-white flex items-center gap-2 cursor-pointer transition-all">
-                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                    匯入資料
-                    <input type="file" id="importFile" class="hidden" accept=".json" onchange="importData(event)">
-                </label>
-                <button id="installBtn" class="hidden bg-white/10 hover:bg-white/20 px-6 py-2 rounded-full font-bold text-white border border-white/20 flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                    安裝 App
-                </button>
+                <div class="flex gap-2">
+                    <button onclick="exportData()" class="bg-slate-800 hover:bg-slate-700 p-2 rounded-full text-slate-300" title="匯出備份">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    </button>
+                    <label class="bg-slate-800 hover:bg-slate-700 p-2 rounded-full text-slate-300 cursor-pointer" title="匯入資料">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        <input type="file" id="importFile" class="hidden" accept=".json" onchange="importData(event)">
+                    </label>
+                </div>
             </div>
         </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Left Column: Input Form -->
-            <div class="lg:col-span-1">
-                <div class="glass-card p-6 rounded-2xl sticky top-8">
-                    <h2 class="text-xl font-semibold mb-4 flex items-center text-sky-400">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                        新增資料
-                    </h2>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- Sidebar: Form -->
+            <div class="lg:col-span-4 xl:col-span-3">
+                <div class="glass-card p-6 rounded-3xl sticky top-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 id="formTitle" class="text-xl font-bold text-sky-400">新增歌曲</h2>
+                        <button id="cancelEdit" onclick="resetForm()" class="hidden text-xs text-slate-400 hover:text-white underline">取消編輯</button>
+                    </div>
                     <div class="space-y-4 text-sm">
-                        <div class="grid grid-cols-2 gap-4">
+                        <input type="hidden" id="editIndex" value="-1">
+                        <div class="grid grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-slate-400 mb-1 font-medium">編號</label>
-                                <input type="text" id="songId" placeholder="001" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white">
+                                <label class="text-xs text-slate-500 block mb-1">編號</label>
+                                <input type="text" id="songId" placeholder="No." class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-2 text-white">
                             </div>
                             <div>
-                                <label class="block text-slate-400 mb-1 font-medium">類別</label>
-                                <select id="songCategory" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-300">
+                                <label class="text-xs text-slate-500 block mb-1">類別</label>
+                                <select id="songCategory" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-2 text-slate-300">
                                     <option value="歌曲">歌曲</option>
                                     <option value="伴唱">伴唱</option>
                                 </select>
                             </div>
                         </div>
                         <div>
-                            <label class="block text-slate-400 mb-1 font-medium">歌名</label>
-                            <input type="text" id="songTitle" placeholder="輸入歌曲名稱" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white">
+                            <label class="text-xs text-slate-500 block mb-1">歌名</label>
+                            <input type="text" id="songTitle" placeholder="輸入歌曲名稱" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-2 text-white font-bold">
                         </div>
                         <div>
-                            <label class="block text-slate-400 mb-1 font-medium">作詞者 / 備註</label>
-                            <input type="text" id="songLyricist" placeholder="例如：茄子蛋" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white">
+                            <label class="text-xs text-slate-500 block mb-1">作詞者 / 備註</label>
+                            <input type="text" id="songLyricist" placeholder="例如：作曲家或演唱筆記" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-2 text-white">
                         </div>
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-slate-400 mb-1 font-medium">性別</label>
-                                <select id="songGender" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-300">
+                                <label class="text-xs text-slate-500 block mb-1">性別</label>
+                                <select id="songGender" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-2 text-slate-300">
                                     <option value="男生">男生</option>
                                     <option value="女生">女生</option>
                                     <option value="合唱">合唱</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-slate-400 mb-1 font-medium">語言</label>
-                                <select id="songLang" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-300">
+                                <label class="text-xs text-slate-500 block mb-1">語言</label>
+                                <select id="songLang" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-2 text-slate-300">
                                     <option value="台語">台語</option>
                                     <option value="國語">國語</option>
                                     <option value="韓語">韓語</option>
@@ -151,159 +132,172 @@
                             </div>
                         </div>
                         <div>
-                            <label class="block text-slate-400 mb-1 font-medium text-red-400">YouTube 連結</label>
-                            <input type="url" id="songUrl" placeholder="https://youtube.com/..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white">
+                            <label class="text-xs text-slate-500 block mb-1">YouTube 連結</label>
+                            <input type="url" id="songUrl" placeholder="貼上網址或 ID" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-2 text-white">
                         </div>
-                        <button onclick="addSong()" class="w-full btn-gradient py-3 rounded-lg font-bold text-white shadow-lg shadow-blue-900/20 mt-2">
-                            加入清單
+                        <button onclick="saveSong()" id="saveBtn" class="w-full btn-gradient py-3 rounded-xl font-bold text-white shadow-lg mt-2">
+                            儲存歌曲
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Right Column: List & Filter -->
-            <div class="lg:col-span-2">
-                <!-- Filters -->
-                <div class="glass-card p-4 rounded-xl mb-6 flex flex-wrap gap-3 items-center">
-                    <select onchange="renderSongs()" id="filterCategory" class="bg-slate-800 border-none rounded-lg px-3 py-2 text-sm text-slate-300">
-                        <option value="全部類別">全部類別</option>
-                        <option value="歌曲">歌曲</option>
-                        <option value="伴唱">伴唱</option>
-                    </select>
-                    <select onchange="renderSongs()" id="filterGender" class="bg-slate-800 border-none rounded-lg px-3 py-2 text-sm text-slate-300">
-                        <option value="全部性別">全部性別</option>
-                        <option value="男生">男生</option>
-                        <option value="女生">女生</option>
-                        <option value="合唱">合唱</option>
-                    </select>
-                    <select onchange="renderSongs()" id="filterLang" class="bg-slate-800 border-none rounded-lg px-3 py-2 text-sm text-slate-300">
-                        <option value="全部語言">全部語言</option>
-                        <option value="台語">台語</option>
-                        <option value="國語">國語</option>
-                        <option value="韓語">韓語</option>
-                        <option value="英語">英語</option>
-                        <option value="日語">日語</option>
-                    </select>
-                    <div class="ml-auto text-slate-400 text-sm px-2">
-                        總計：<span id="totalCount" class="text-sky-400 font-bold">0</span> 首
+            <!-- Main Content: Search & List -->
+            <div class="lg:col-span-8 xl:col-span-9">
+                <!-- Toolbar -->
+                <div class="glass-card p-4 rounded-3xl mb-6 space-y-4">
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <div class="relative flex-grow">
+                            <svg class="w-5 h-5 absolute left-3 top-2.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            <input type="text" id="searchInput" oninput="renderSongs()" placeholder="搜尋歌名、作詞者..." class="w-full bg-slate-900/40 border border-slate-700 rounded-2xl pl-10 pr-4 py-2 text-sm">
+                        </div>
+                        <div class="flex gap-2 shrink-0">
+                            <select onchange="renderSongs()" id="filterCategory" class="bg-slate-800/50 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-300">
+                                <option value="全部類別">全部類別</option>
+                                <option value="歌曲">歌曲</option>
+                                <option value="伴唱">伴唱</option>
+                            </select>
+                            <select onchange="renderSongs()" id="filterLang" class="bg-slate-800/50 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-300">
+                                <option value="全部語言">全部語言</option>
+                                <option value="台語">台語</option>
+                                <option value="國語">國語</option>
+                                <option value="韓語">韓語</option>
+                                <option value="英語">英語</option>
+                                <option value="日語">日語</option>
+                            </select>
+                            <label class="flex items-center gap-2 px-3 py-2 bg-slate-800/50 rounded-xl border border-slate-700 cursor-pointer text-xs">
+                                <input type="checkbox" id="filterFav" onchange="renderSongs()" class="rounded text-rose-500 bg-slate-900 border-slate-700">
+                                <span class="text-slate-400">僅收藏</span>
+                            </label>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Table Container -->
-                <div class="glass-card rounded-2xl overflow-hidden overflow-x-auto custom-scrollbar shadow-2xl">
-                    <table class="w-full text-left border-collapse min-w-[700px]">
-                        <thead>
-                            <tr class="bg-slate-800/50 text-xs tracking-wider uppercase">
-                                <th class="px-6 py-4 font-bold text-slate-400">編號</th>
-                                <th class="px-6 py-4 font-bold text-slate-400">歌名 / 作詞</th>
-                                <th class="px-6 py-4 font-bold text-slate-400">屬性</th>
-                                <th class="px-6 py-4 font-bold text-slate-400 text-right">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="songList" class="divide-y divide-slate-700/50">
-                            <!-- 資料動態生成 -->
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div id="emptyState" class="hidden text-center py-24 text-slate-500">
-                    <svg class="w-12 h-12 mx-auto mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    目前清單是空的，或沒有符合篩選條件的歌曲。
+                <!-- Table -->
+                <div class="glass-card rounded-3xl overflow-hidden shadow-2xl">
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-left border-collapse min-w-[800px]">
+                            <thead>
+                                <tr class="bg-slate-800/80 text-[10px] tracking-widest uppercase text-slate-500">
+                                    <th class="px-6 py-4 font-bold w-12 text-center">收藏</th>
+                                    <th class="px-6 py-4 font-bold">歌曲資訊</th>
+                                    <th class="px-6 py-4 font-bold">屬性標籤</th>
+                                    <th class="px-6 py-4 font-bold text-right">管理</th>
+                                </tr>
+                            </thead>
+                            <tbody id="songList" class="divide-y divide-slate-700/30"></tbody>
+                        </table>
+                    </div>
+                    <div id="emptyState" class="hidden text-center py-32 text-slate-500">
+                        <svg class="w-16 h-16 mx-auto mb-4 opacity-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 19V6l12-3v13M9 19c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zM21 16c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2z"></path></svg>
+                        找不到符合條件的歌曲。
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Toast Notification -->
-    <div id="toast" class="fixed bottom-8 right-8 bg-sky-600 text-white px-6 py-3 rounded-xl shadow-2xl transform translate-y-24 transition-transform duration-300 z-50 font-bold">
-        已成功更新！
+    <!-- Floating Bottom Player -->
+    <div id="player-ui" class="fixed bottom-0 left-0 w-full bg-slate-900/95 border-t border-white/10 p-4 transform translate-y-full z-50 backdrop-blur-xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+        <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+            <!-- Video Container -->
+            <div class="md:col-span-3 lg:col-span-2 aspect-video bg-black rounded-xl overflow-hidden shadow-inner shrink-0 relative">
+                <div id="player" class="absolute inset-0"></div>
+            </div>
+            
+            <!-- Metadata -->
+            <div class="md:col-span-5 lg:col-span-7 flex flex-col justify-center overflow-hidden">
+                <div class="flex items-center gap-2 mb-1">
+                    <span id="p-category" class="text-[10px] font-bold px-2 py-0.5 bg-sky-500/20 text-sky-400 rounded-full border border-sky-500/30 uppercase">歌曲</span>
+                    <span id="p-lang" class="text-[10px] font-bold px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded-full border border-purple-500/30 uppercase">台語</span>
+                </div>
+                <h3 id="p-title" class="text-xl font-black text-white truncate drop-shadow-sm">播放中...</h3>
+                <p id="p-sub" class="text-sm text-slate-400 truncate">請點擊按鈕開始連續播放</p>
+            </div>
+
+            <!-- Controls -->
+            <div class="md:col-span-4 lg:col-span-3 flex items-center justify-end gap-2">
+                <button onclick="toggleShuffle()" id="shuffleBtn" class="p-2 text-slate-500 hover:text-white transition-colors" title="隨機播放">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h16M4 20h16M4 12l4-4m0 0l4 4m-4-4v12M20 12l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                </button>
+                <div class="flex items-center bg-slate-800/50 rounded-2xl p-1 gap-1">
+                    <button onclick="playPrev()" class="p-2 text-slate-300 hover:text-white">
+                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z"></path></svg>
+                    </button>
+                    <button onclick="closePlayer()" class="p-3 bg-rose-600 rounded-xl text-white hover:bg-rose-500 shadow-lg transition-transform active:scale-95">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                    <button onclick="playNext()" class="p-2 text-slate-300 hover:text-white">
+                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path d="M4.555 14.832A1 1 0 006 14v-2.798l5.445 3.63A1 1 0 0013 14V6a1 1 0 00-1.555-.832L6 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z" transform="rotate(180 10 10)"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-10 right-10 bg-sky-600 text-white px-8 py-4 rounded-2xl shadow-2xl transform translate-y-32 transition-transform duration-500 z-[100] font-bold border border-white/20"></div>
+
+    <script src="https://www.youtube.com/iframe_api"></script>
+
     <script>
-        // PWA 註冊 Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                const swContent = `
-                    self.addEventListener('install', (e) => { self.skipWaiting(); });
-                    self.addEventListener('fetch', (e) => { e.respondWith(fetch(e.request)); });
-                `;
-                const blob = new Blob([swContent], { type: 'text/javascript' });
-                const swUrl = URL.createObjectURL(blob);
-                navigator.serviceWorker.register(swUrl).catch(err => console.log('SW failed:', err));
+        // --- 資料管理 ---
+        let songs = JSON.parse(localStorage.getItem('a-wei-v3')) || [
+            { id: '001', title: '浪子回頭', lyricist: '黃奇斌', gender: '男生', lang: '台語', category: '歌曲', url: 'https://www.youtube.com/watch?v=x3bDhtuC5yk', favorite: true },
+            { id: '002', title: '七桃人', lyricist: '郭金發', gender: '男生', lang: '台語', category: '歌曲', url: 'https://www.youtube.com/watch?v=oYxK8X76S5E', favorite: false }
+        ];
+
+        let player;
+        let playlist = [];
+        let curIdx = 0;
+        let isShuffle = false;
+
+        // --- 播放邏輯 ---
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '100%',
+                width: '100%',
+                playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0, 'modestbranding': 1 },
+                events: { 'onStateChange': (e) => { if(e.data === 0) playNext(); } }
             });
         }
 
-        // PWA 安裝按鈕
-        let deferredPrompt;
-        const installBtn = document.getElementById('installBtn');
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            installBtn.classList.remove('hidden');
-        });
-
-        installBtn.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') installBtn.classList.add('hidden');
-                deferredPrompt = null;
-            }
-        });
-
-        // 核心資料邏輯
-        let songs = JSON.parse(localStorage.getItem('a-wei-songs')) || [
-            { id: '001', title: '浪子回頭', lyricist: '黃奇斌', gender: '男生', lang: '台語', category: '歌曲', url: 'https://www.youtube.com/watch?v=x3bDhtuC5yk' }
-        ];
-
-        function autoSave() {
-            localStorage.setItem('a-wei-songs', JSON.stringify(songs));
+        function extractId(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : url; // 支援直接貼 ID
         }
 
-        function manualSave() {
-            autoSave();
-            showToast('✅ 資料已成功儲存至此裝置！');
+        function startPlaylist() {
+            playlist = songs.filter(s => s.favorite);
+            if(playlist.length === 0) return alert('收藏清單是空的！');
+            if(isShuffle) playlist = [...playlist].sort(() => Math.random() - 0.5);
+            curIdx = 0;
+            document.getElementById('player-ui').classList.remove('translate-y-full');
+            loadSong();
         }
 
-        function exportData() {
-            const dataStr = JSON.stringify(songs, null, 2);
-            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-            const exportFileDefaultName = 'a-wei-music-backup.json';
-            const linkElement = document.createElement('a');
-            linkElement.setAttribute('href', dataUri);
-            linkElement.setAttribute('download', exportFileDefaultName);
-            linkElement.click();
-            showToast('📂 已將備份檔案下載至電腦。');
+        function loadSong() {
+            const s = playlist[curIdx];
+            const vid = extractId(s.url);
+            player.loadVideoById(vid);
+            document.getElementById('p-title').innerText = s.title;
+            document.getElementById('p-sub').innerText = `No.${s.id} • 作詞：${s.lyricist}`;
+            document.getElementById('p-category').innerText = s.category;
+            document.getElementById('p-lang').innerText = s.lang;
         }
 
-        function importData(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const importedSongs = JSON.parse(e.target.result);
-                    if (Array.isArray(importedSongs)) {
-                        songs = importedSongs;
-                        autoSave();
-                        renderSongs();
-                        showToast('📥 資料匯入成功！');
-                    }
-                } catch (err) {
-                    alert('匯入格式錯誤，請確保檔案是正確的 JSON 格式。');
-                }
-            };
-            reader.readAsText(file);
+        function playNext() { curIdx = (curIdx + 1) % playlist.length; loadSong(); }
+        function playPrev() { curIdx = (curIdx - 1 + playlist.length) % playlist.length; loadSong(); }
+        function closePlayer() { player.stopVideo(); document.getElementById('player-ui').classList.add('translate-y-full'); }
+        function toggleShuffle() {
+            isShuffle = !isShuffle;
+            document.getElementById('shuffleBtn').classList.toggle('text-sky-400', isShuffle);
+            showToast(isShuffle ? '隨機播放：開啟' : '隨機播放：關閉');
         }
 
-        function showToast(message) {
-            const toast = document.getElementById('toast');
-            toast.innerText = message;
-            toast.classList.remove('translate-y-24');
-            setTimeout(() => toast.classList.add('translate-y-24'), 3000);
-        }
-
-        function addSong() {
+        // --- 表單功能 ---
+        function saveSong() {
             const id = document.getElementById('songId').value.trim();
             const title = document.getElementById('songTitle').value.trim();
             const lyricist = document.getElementById('songLyricist').value.trim() || '未填寫';
@@ -311,103 +305,161 @@
             const lang = document.getElementById('songLang').value;
             const category = document.getElementById('songCategory').value;
             const url = document.getElementById('songUrl').value.trim();
+            const editIdx = parseInt(document.getElementById('editIndex').value);
 
-            if (!id || !title || !url) {
-                alert('請填寫必要資料（編號、歌名與連結）');
-                return;
+            if(!id || !title || !url) return alert('請填寫編號、歌名與網址');
+
+            const data = { id, title, lyricist, gender, lang, category, url, favorite: editIdx >= 0 ? songs[editIdx].favorite : false };
+
+            if(editIdx >= 0) {
+                songs[editIdx] = data;
+                showToast('已更新歌曲！');
+            } else {
+                songs.unshift(data);
+                showToast('已新增歌曲！');
             }
 
-            const newSong = { id, title, lyricist, gender, lang, category, url };
-            songs.unshift(newSong); 
             autoSave();
+            resetForm();
             renderSongs();
-            
-            document.getElementById('songId').value = '';
-            document.getElementById('songTitle').value = '';
-            document.getElementById('songLyricist').value = '';
-            document.getElementById('songUrl').value = '';
-            
-            showToast('🆕 歌曲已新增。');
         }
 
-        function deleteSong(indexInFiltered) {
-            if (confirm('確定要刪除這首歌曲嗎？')) {
-                const filterCategory = document.getElementById('filterCategory').value;
-                const filterGender = document.getElementById('filterGender').value;
-                const filterLang = document.getElementById('filterLang').value;
-                
-                const filtered = songs.filter(s => {
-                    const categoryMatch = filterCategory === '全部類別' || s.category === filterCategory;
-                    const genderMatch = filterGender === '全部性別' || s.gender === filterGender;
-                    const langMatch = filterLang === '全部語言' || s.lang === filterLang;
-                    return categoryMatch && genderMatch && langMatch;
-                });
+        function editSong(originalIndex) {
+            const s = songs[originalIndex];
+            document.getElementById('songId').value = s.id;
+            document.getElementById('songTitle').value = s.title;
+            document.getElementById('songLyricist').value = s.lyricist;
+            document.getElementById('songGender').value = s.gender;
+            document.getElementById('songLang').value = s.lang;
+            document.getElementById('songCategory').value = s.category;
+            document.getElementById('songUrl').value = s.url;
+            document.getElementById('editIndex').value = originalIndex;
+            
+            document.getElementById('formTitle').innerText = '編輯歌曲';
+            document.getElementById('saveBtn').innerText = '更新資料';
+            document.getElementById('cancelEdit').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
 
-                const targetSong = filtered[indexInFiltered];
-                const originalIndex = songs.findIndex(s => s === targetSong);
-                
-                if (originalIndex !== -1) {
-                    songs.splice(originalIndex, 1);
-                    autoSave();
-                    renderSongs();
-                    showToast('🗑️ 歌曲已刪除。');
-                }
+        function resetForm() {
+            document.getElementById('editIndex').value = "-1";
+            document.getElementById('formTitle').innerText = '新增歌曲';
+            document.getElementById('saveBtn').innerText = '儲存歌曲';
+            document.getElementById('cancelEdit').classList.add('hidden');
+            ['songId', 'songTitle', 'songLyricist', 'songUrl'].forEach(id => document.getElementById(id).value = '');
+        }
+
+        function deleteSong(idx) {
+            if(confirm('確定刪除這首歌嗎？')) {
+                songs.splice(idx, 1);
+                autoSave(); renderSongs();
+                showToast('已刪除歌曲。');
             }
         }
 
-        function renderSongs() {
-            const listElement = document.getElementById('songList');
-            const filterCategory = document.getElementById('filterCategory').value;
-            const filterGender = document.getElementById('filterGender').value;
-            const filterLang = document.getElementById('filterLang').value;
-            const emptyState = document.getElementById('emptyState');
-            
-            listElement.innerHTML = '';
+        function toggleFav(idx) {
+            songs[idx].favorite = !songs[idx].favorite;
+            autoSave(); renderSongs();
+        }
 
-            const filtered = songs.filter(s => {
-                const categoryMatch = filterCategory === '全部類別' || s.category === filterCategory;
-                const genderMatch = filterGender === '全部性別' || s.gender === filterGender;
-                const langMatch = filterLang === '全部語言' || s.lang === filterLang;
-                return categoryMatch && genderMatch && langMatch;
+        // --- UI 渲染 ---
+        function renderSongs() {
+            const list = document.getElementById('songList');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const fCat = document.getElementById('filterCategory').value;
+            const fLang = document.getElementById('filterLang').value;
+            const fFav = document.getElementById('filterFav').checked;
+            
+            list.innerHTML = '';
+
+            const filtered = songs.map((s, i) => ({...s, oriIdx: i})).filter(s => {
+                const matchSearch = s.title.toLowerCase().includes(search) || s.lyricist.toLowerCase().includes(search) || s.id.includes(search);
+                const matchCat = fCat === '全部類別' || s.category === fCat;
+                const matchLang = fLang === '全部語言' || s.lang === fLang;
+                const matchFav = !fFav || s.favorite;
+                return matchSearch && matchCat && matchLang && matchFav;
             });
 
-            document.getElementById('totalCount').innerText = filtered.length;
-
-            if (filtered.length === 0) {
-                emptyState.classList.remove('hidden');
-            } else {
-                emptyState.classList.add('hidden');
-            }
-
-            filtered.forEach((song, index) => {
+            filtered.forEach(s => {
                 const tr = document.createElement('tr');
-                tr.className = 'hover:bg-slate-700/30 transition-colors group';
+                tr.className = 'hover:bg-white/[0.03] transition-colors group text-sm';
                 tr.innerHTML = `
-                    <td class="px-6 py-4 font-mono text-sky-400 font-bold">${song.id}</td>
+                    <td class="px-6 py-4 text-center">
+                        <button onclick="toggleFav(${s.oriIdx})" class="transition-all hover:scale-125">
+                            <svg class="w-6 h-6 ${s.favorite ? 'favorite-active' : 'text-slate-700'}" fill="currentColor" viewBox="0 0 20 20"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/></svg>
+                        </button>
+                    </td>
                     <td class="px-6 py-4">
-                        <div class="font-bold text-slate-100">${song.title}</div>
-                        <div class="text-[11px] text-slate-500 mt-1">作詞/備註：${song.lyricist}</div>
+                        <div class="text-[10px] font-bold text-sky-500 mb-0.5 tracking-tighter">#${s.id}</div>
+                        <div class="text-white font-bold text-lg leading-tight">${s.title}</div>
+                        <div class="text-slate-500 text-xs mt-1">作詞：${s.lyricist}</div>
                     </td>
                     <td class="px-6 py-4">
                         <div class="flex flex-wrap gap-2">
-                            <span class="px-2 py-0.5 tag-category text-[10px] rounded uppercase font-bold">${song.category}</span>
-                            <span class="px-2 py-0.5 bg-slate-800 border border-slate-700 text-[10px] rounded text-slate-400 uppercase font-bold">${song.gender}</span>
-                            <span class="px-2 py-0.5 bg-blue-900/30 border border-blue-800/50 text-[10px] rounded text-sky-400 uppercase font-bold">${song.lang}</span>
+                            <span class="px-2 py-0.5 text-[10px] font-bold rounded-full ${s.category === '伴唱' ? 'tag-karaoke' : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'}">${s.category}</span>
+                            <span class="px-2 py-0.5 text-[10px] font-bold rounded-full ${s.lang === '台語' ? 'tag-lang-tw' : (s.lang === '韓語' ? 'tag-lang-kr' : 'bg-slate-800 text-slate-400 border border-slate-700')}">${s.lang}</span>
+                            <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-800 text-slate-500 border border-slate-700">${s.gender}</span>
                         </div>
                     </td>
                     <td class="px-6 py-4 text-right">
-                        <div class="flex items-center justify-end gap-4">
-                            <a href="${song.url}" target="_blank" class="text-sky-400 hover:text-sky-300 flex items-center gap-1 font-bold text-sm transition-all transform hover:scale-105">
+                        <div class="flex items-center justify-end gap-2">
+                            <a href="${s.url}" target="_blank" class="p-2 bg-sky-500/10 text-sky-400 rounded-xl hover:bg-sky-500/20 transition-all">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                                播放
                             </a>
-                            <button onclick="deleteSong(${index})" class="text-slate-600 hover:text-red-400 transition-colors p-1" title="刪除">
+                            <button onclick="editSong(${s.oriIdx})" class="p-2 text-slate-400 hover:text-white transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            </button>
+                            <button onclick="deleteSong(${s.oriIdx})" class="p-2 text-slate-600 hover:text-rose-400 transition-colors">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                             </button>
                         </div>
                     </td>
                 `;
-                listElement.appendChild(tr);
+                list.appendChild(tr);
+            });
+
+            document.getElementById('emptyState').classList.toggle('hidden', filtered.length > 0);
+        }
+
+        // --- 系統工具 ---
+        function autoSave() { localStorage.setItem('a-wei-v3', JSON.stringify(songs)); }
+        function manualSave() { autoSave(); showToast('💾 資料已成功儲存至此裝置！'); }
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.remove('translate-y-32');
+            setTimeout(() => t.classList.add('translate-y-32'), 3000);
+        }
+        function exportData() {
+            const blob = new Blob([JSON.stringify(songs, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'a-wei-backup-' + new Date().toISOString().split('T')[0] + '.json';
+            a.click();
+            showToast('📤 已匯出備份檔案。');
+        }
+        function importData(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const data = JSON.parse(evt.target.result);
+                    if(Array.isArray(data)) {
+                        songs = data; autoSave(); renderSongs(); showToast('📥 資料匯入成功！');
+                    }
+                } catch(err) { alert('匯入失敗，請確認檔案格式。'); }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- PWA 註冊 ---
+        if('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const sw = `self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('fetch', e => e.respondWith(fetch(e.request)));`;
+                const blob = new Blob([sw], { type: 'text/javascript' });
+                navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
             });
         }
 
